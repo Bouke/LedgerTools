@@ -1,7 +1,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Ledger",
+    name: "LedgerTools",
     dependencies: [
         .Package(url: "https://github.com/Bouke/FootlessParser.git", majorVersion: 3),
         .Package(url: "https://github.com/Bouke/Glob.git", majorVersion: 1),
