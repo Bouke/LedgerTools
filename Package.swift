@@ -7,7 +7,8 @@ let package = Package(
         .Package(url: "https://github.com/Bouke/Glob.git", majorVersion: 1),
     ],
     targets: [
-        Target(name: "CLI", dependencies: ["LedgerParser"]),
+        Target(name: "CLI", dependencies: ["LedgerParser", "Categorizer"]),
         Target(name: "LedgerParser"),
+        Target(name: "Categorizer"),
     ]
 )
