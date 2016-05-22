@@ -19,7 +19,7 @@ let row = extend <^> cell <*> zeroOrMore( char(delimiter) *> cell ) <* oneOf("\r
 
 let csv = oneOrMore(row)
 
-func parseCSV(filename: String) throws -> [[String]] {
+public func parseCSV(filename: String) throws -> [[String]] {
     let input = try String(contentsOfFile: filename)
     do {
         return try parse(csv, input)
