@@ -59,6 +59,18 @@ let minimalColumnCount = [settings.csvDateColumn, settings.csvPayeeColumn,
 
 let csvTokenSeparators = NSCharacterSet(charactersIn: settings.csvTokenSeparators)
 
+let csvNumberFormatter = NSNumberFormatter()
+csvNumberFormatter.numberStyle = .decimalStyle
+if let locale = settings.csvLocale {
+    csvNumberFormatter.locale = NSLocale(localeIdentifier: locale)
+}
+
+let ledgerNumberFormatter = NSNumberFormatter()
+ledgerNumberFormatter.numberStyle = .currencyStyle
+if let locale = settings.ledgerLocale {
+    ledgerNumberFormatter.locale = NSLocale(localeIdentifier: locale)
+}
+
 for row in rows {
     guard row.count >= minimalColumnCount else {
         print("Found a row with \(row.count) columns, at least \(minimalColumnCount) expected")
@@ -66,11 +78,15 @@ for row in rows {
     }
 
     let tokens = row.joined(separator: " ").uppercased().components(separatedBy: csvTokenSeparators).filter { $0 != "" }
-
-    // TODO: configure default account
-    let account = categorizer(tokens).first?.0 ?? "Expenses:Unknown"
+    let account = categorizer(tokens).first?.0 ?? settings.defaultAccount
 
     let payee = row[settings.csvPayeeColumn]
+
+    // TODO: "Af / Bij" (ING) interpretation
+    guard let amount = csvNumberFormatter.number(from: row[settings.csvAmountColumn]) else {
+        print("Could not parse amount \(row[settings.csvAmountColumn])")
+        exit(1)
+    }
 
     guard let date = csvDateFormatter.date(from: row[settings.csvDateColumn]) else {
         print("Could not parse date \(row[settings.csvDateColumn])")
@@ -83,5 +99,5 @@ for row in rows {
     print("    ; CSV: \""+row.joined(separator: "\",\"")+"\"")
     print("    \(account)")
     // TODO: amount formatting
-    print("    \(originatingAccount)    € \(row[settings.csvAmountColumn])")
+    print("    \(originatingAccount.pad(65)) \(ledgerNumberFormatter.string(for: amount)!)")
 }
