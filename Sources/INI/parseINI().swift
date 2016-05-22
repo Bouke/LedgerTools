@@ -32,7 +32,7 @@ public struct Section {
         return settings[key]
     }
 
-    public func bool(key: String) -> Bool {
+    public func bool(_ key: String) -> Bool {
         return ["1", "true", "yes"].contains(settings[key] ?? "")
     }
 }

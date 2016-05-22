@@ -2,6 +2,7 @@ import Foundation
 import class CommandLine.CommandLine
 import class CommandLine.StringOption
 import class CommandLine.IntOption
+import class CommandLine.BoolOption
 import func INI.parseINI
 import struct INI.Config
 
@@ -14,6 +15,8 @@ struct Settings {
     var csvAmountColumn = 2
     var csvDescriptionColumn = 3
     var csvTokenSeparators = ",; \t\"'/:"
+    var csvSkipRows = 0
+    var csvReverseRows = false
 
     var ledgerDateFormat = "yyyy-MM-dd"
     var ledgerTokenSeparators = ",; \t\"':"
@@ -27,6 +30,7 @@ func parseSettings() -> Settings {
     let sectionName = StringOption(shortFlag: "s", helpMessage: "Config file section name")
     let trainFile = StringOption(shortFlag: "t", longFlag: "train-file",
         helpMessage: "Ledger file to train categorizer [default=ledger.dat]")
+
     let csvDateFormat = StringOption(shortFlag: "f", longFlag: "csv-date-format",
         helpMessage: "[default=yyyy-MM-dd]")
     let csvDateColumn = IntOption(shortFlag: "d", longFlag: "csv-date-column",
@@ -39,12 +43,19 @@ func parseSettings() -> Settings {
         helpMessage: "[default=3]")
     let csvTokenSeparators = StringOption(longFlag: "csv-token-separators",
         helpMessage: "[default=,; \\t\"'")
+    let csvSkipRows = IntOption(longFlag: "csv-skip-rows",
+        helpMessage: "[default=0]")
+    let csvReverseRows = BoolOption(shortFlag: "r", longFlag: "csv-reverse-rows",
+        helpMessage: "[default=false]")
+
     let ledgerDateFormat = StringOption(shortFlag: "g", longFlag: "ledger-date-format",
         helpMessage: "[default=yyyy-MM-dd]")
     let ledgerTokenSeparators = StringOption(longFlag: "ledger-token-separators",
         helpMessage: "[default=,; \\t\"'")
+
     cli.addOptions(configFile, sectionName, trainFile,
-        csvDateFormat, csvDateColumn, csvPayeeColumn, csvAmountColumn, csvDescriptionColumn,
+        csvDateFormat, csvDateColumn, csvPayeeColumn, csvAmountColumn,
+        csvDescriptionColumn, csvTokenSeparators, csvSkipRows, csvReverseRows,
         ledgerDateFormat, ledgerTokenSeparators)
 
     do {
@@ -88,6 +99,8 @@ func parseSettings() -> Settings {
         if let csvAmountColumn = section["csv-amount-column"].flatMap({ Int($0) }) { settings.csvAmountColumn = csvAmountColumn }
         if let csvDescriptionColumn = section["csv-description-column"].flatMap({ Int($0) }) { settings.csvDescriptionColumn = csvDescriptionColumn }
         if let csvTokenSeparators = section["csv-token-separators"] { settings.csvTokenSeparators = interpretEscapes(csvTokenSeparators) }
+        if let csvSkipRows = section["csv-skip-rows"].flatMap({ Int($0) }) { settings.csvSkipRows = csvSkipRows }
+        settings.csvReverseRows = section.bool("csv-reverse-rows")
 
         if let ledgerDateFormat = section["ledger-date-format"] { settings.ledgerDateFormat = ledgerDateFormat }
         if let ledgerTokenSeparators = section["ledger-token-separators"] { settings.ledgerTokenSeparators = interpretEscapes(ledgerTokenSeparators) }
@@ -104,6 +117,8 @@ func parseSettings() -> Settings {
     if let csvAmountColumn = csvAmountColumn.value { settings.csvAmountColumn = csvAmountColumn }
     if let csvDescriptionColumn = csvDescriptionColumn.value { settings.csvDescriptionColumn = csvDescriptionColumn }
     if let csvTokenSeparators = csvTokenSeparators.value { settings.csvTokenSeparators = interpretEscapes(csvTokenSeparators) }
+    if let csvSkipRows = csvSkipRows.value { settings.csvSkipRows = csvSkipRows }
+    if csvReverseRows.wasSet { settings.csvReverseRows = true }
 
     if let ledgerDateFormat = ledgerDateFormat.value { settings.ledgerDateFormat = ledgerDateFormat }
     if let ledgerTokenSeparators = ledgerTokenSeparators.value { settings.ledgerTokenSeparators = interpretEscapes(ledgerTokenSeparators) }

@@ -39,6 +39,15 @@ let history = { (transactions: [Transaction]) -> History in
 
 let categorizer = train(history)
 
+let rows = try { (filename: String) throws -> [[String]] in
+    var rows = try parseCSV(filename: filename)
+    rows = Array(rows[settings.csvSkipRows..<rows.endIndex])
+    if settings.csvReverseRows {
+        rows = rows.reversed()
+    }
+    return rows
+}(settings.transactionsFile)
+
 let csvDateFormatter = NSDateFormatter()
 csvDateFormatter.dateFormat = settings.csvDateFormat
 
@@ -50,11 +59,7 @@ let minimalColumnCount = [settings.csvDateColumn, settings.csvPayeeColumn,
 
 let csvTokenSeparators = NSCharacterSet(charactersIn: settings.csvTokenSeparators)
 
-let rows = try parseCSV(filename: settings.transactionsFile)
-
-// TODO: configure num rows to skip
-// TODO: sort transactions
-for row in rows[1..<rows.endIndex] {
+for row in rows {
     guard row.count >= minimalColumnCount else {
         print("Found a row with \(row.count) columns, at least \(minimalColumnCount) expected")
         exit(1)
