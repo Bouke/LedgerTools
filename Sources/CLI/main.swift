@@ -61,6 +61,7 @@ let csvTokenSeparators = NSCharacterSet(charactersIn: settings.csvTokenSeparator
 
 let csvNumberFormatter = NSNumberFormatter()
 csvNumberFormatter.numberStyle = .decimalStyle
+csvNumberFormatter.isLenient = true
 if let locale = settings.csvLocale {
     csvNumberFormatter.locale = NSLocale(localeIdentifier: locale)
 }
