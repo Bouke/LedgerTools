@@ -14,6 +14,7 @@ struct Settings {
     var csvDateColumn = 0
     var csvPayeeColumn = 1
     var csvAmountColumn = 2
+    var csvAmountDebit: (column: Int, text: String)?
     var csvDescriptionColumn = 3
     var csvTokenSeparators = ",; \t\"'/:"
     var csvSkipRows = 0
@@ -44,6 +45,8 @@ func parseSettings() -> Settings {
         helpMessage: "[default=1]")
     let csvAmountColumn = IntOption(shortFlag: "a", longFlag: "csv-amount-column",
         helpMessage: "[default=2]")
+    let csvAmountDebit = StringOption(longFlag: "csv-amount-debit",
+                                      helpMessage: "Modifier for the amount. If the specified column matches the text, the amount is debited. Use column=value; --csv-amount-debit 4=dr")
     let csvDescriptionColumn = IntOption(shortFlag: "n", longFlag: "csv-description-column",
         helpMessage: "[default=3]")
     let csvTokenSeparators = StringOption(longFlag: "csv-token-separators",
@@ -63,7 +66,7 @@ func parseSettings() -> Settings {
         helpMessage: "[default=current locale]")
 
     cli.addOptions(configFile, sectionName, trainFile, defaultAccount,
-        csvDateFormat, csvDateColumn, csvPayeeColumn, csvAmountColumn,
+        csvDateFormat, csvDateColumn, csvPayeeColumn, csvAmountColumn, csvAmountDebit,
         csvDescriptionColumn, csvTokenSeparators, csvSkipRows, csvReverseRows,
         ledgerDateFormat, ledgerTokenSeparators, ledgerLocale)
 
@@ -107,6 +110,13 @@ func parseSettings() -> Settings {
         if let csvDateColumn = section["csv-date-column"].flatMap({ Int($0) }) { settings.csvDateColumn = csvDateColumn }
         if let csvPayeeColumn = section["csv-payee-column"].flatMap({ Int($0) }) { settings.csvPayeeColumn = csvPayeeColumn }
         if let csvAmountColumn = section["csv-amount-column"].flatMap({ Int($0) }) { settings.csvAmountColumn = csvAmountColumn }
+        if let value = section["csv-amount-debit"].flatMap({ $0.components(separatedBy: "=") }) where value.count == 2 {
+            guard let column = Int(value[0]) else {
+                print("Could not parse csv-amount-debit setting")
+                exit(EX_USAGE)
+            }
+            settings.csvAmountDebit = (column, value[1])
+        }
         if let csvDescriptionColumn = section["csv-description-column"].flatMap({ Int($0) }) { settings.csvDescriptionColumn = csvDescriptionColumn }
         if let csvTokenSeparators = section["csv-token-separators"] { settings.csvTokenSeparators = interpretEscapes(csvTokenSeparators) }
         if let csvSkipRows = section["csv-skip-rows"].flatMap({ Int($0) }) { settings.csvSkipRows = csvSkipRows }
@@ -128,6 +138,14 @@ func parseSettings() -> Settings {
     if let csvDateColumn = csvDateColumn.value { settings.csvDateColumn = csvDateColumn }
     if let csvPayeeColumn = csvPayeeColumn.value { settings.csvPayeeColumn = csvPayeeColumn }
     if let csvAmountColumn = csvAmountColumn.value { settings.csvAmountColumn = csvAmountColumn }
+    if let value = csvAmountDebit.value.flatMap({ $0.components(separatedBy: "=") }) where value.count == 2 {
+        guard let column = Int(value[0]) else {
+            print("Could not parse csv-amount-debit setting")
+            exit(EX_USAGE)
+        }
+        settings.csvAmountDebit = (column, value[1])
+    }
+
     if let csvDescriptionColumn = csvDescriptionColumn.value { settings.csvDescriptionColumn = csvDescriptionColumn }
     if let csvTokenSeparators = csvTokenSeparators.value { settings.csvTokenSeparators = interpretEscapes(csvTokenSeparators) }
     if let csvSkipRows = csvSkipRows.value { settings.csvSkipRows = csvSkipRows }

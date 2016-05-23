@@ -82,10 +82,12 @@ for row in rows {
 
     let payee = row[settings.csvPayeeColumn]
 
-    // TODO: "Af / Bij" (ING) interpretation
-    guard let amount = csvNumberFormatter.number(from: row[settings.csvAmountColumn]) else {
+    guard var amount = csvNumberFormatter.number(from: row[settings.csvAmountColumn]).flatMap({ NSDecimalNumber(decimal: $0.decimalValue) }) else {
         print("Could not parse amount \(row[settings.csvAmountColumn])")
         exit(1)
+    }
+    if let csvAmountDebit = settings.csvAmountDebit where row[csvAmountDebit.column] == csvAmountDebit.text {
+        amount *= -1
     }
 
     guard let date = csvDateFormatter.date(from: row[settings.csvDateColumn]) else {
@@ -98,6 +100,5 @@ for row in rows {
     // TODO: write CSV as-is (or escape correctly)
     print("    ; CSV: \""+row.joined(separator: "\",\"")+"\"")
     print("    \(account)")
-    // TODO: amount formatting
     print("    \(originatingAccount.pad(65)) \(ledgerNumberFormatter.string(for: amount)!)")
 }
