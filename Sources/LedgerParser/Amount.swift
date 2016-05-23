@@ -17,14 +17,6 @@ public struct Amount {
         self.amount = amount
         self.currency = currency
     }
-
-    static func create(amount: Double) -> (String) -> Amount {
-        return { currency in Amount(amount: amount, currency: currency) }
-    }
-
-    static func etaerc(currency: String) -> (Double) -> Amount {
-        return { amount in Amount(amount: amount, currency: currency) }
-    }
 }
 
 func * (lhs: Amount, rhs: Amount) -> Amount {
