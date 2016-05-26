@@ -24,19 +24,22 @@ let originatingAccount = { (t: [Transaction]) -> String in
     return f.sorted { $0.value >= $1.value }.first?.key ?? "Assets:Banking"
 }(transactions)
 
-let history = { (transactions: [Transaction]) -> History in
-    var r = History()
+let (accountHistory, payeeHistory) = { (transactions: [Transaction]) -> (History, History) in
+    var a = History()
+    var p = History()
     for transaction in transactions {
         let tokens = transaction.notes.flatMap { $0.uppercased().components(separatedBy: ledgerTokenSeparators) }.filter { $0 != "" }
+        p.append(transaction.payee, tokens)
         for posting in transaction.postings {
             guard posting.account != originatingAccount else { continue }
-            r.append(posting.account, tokens)
+            a.append(posting.account, tokens)
         }
     }
-    return r
+    return (a, p)
 }(transactions)
 
-let categorizer = train(history)
+let accountCategorizer = train(accountHistory)
+let payeeCategorizer = train(payeeHistory)
 
 let rows = try { (filename: String) throws -> [[String]] in
     guard let data = NSData(contentsOfFile: filename) else {
@@ -82,9 +85,9 @@ for row in rows {
     }
 
     let tokens = row.joined(separator: " ").uppercased().components(separatedBy: csvTokenSeparators).filter { $0 != "" }
-    let account = categorizer(tokens).first?.0 ?? settings.defaultAccount
+    let account = accountCategorizer(tokens).first?.0 ?? settings.defaultAccount
 
-    let payee = row[settings.csvPayeeColumn]
+    let payee = payeeCategorizer(tokens).first?.0 ?? row[settings.csvPayeeColumn]
 
     guard var amount = csvNumberFormatter.number(from: row[settings.csvAmountColumn]).flatMap({ NSDecimalNumber(decimal: $0.decimalValue) }) else {
         print("Could not parse amount \(row[settings.csvAmountColumn])")
