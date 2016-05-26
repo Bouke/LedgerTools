@@ -41,18 +41,34 @@ let (accountHistory, payeeHistory) = { (transactions: [Transaction]) -> (History
 let accountCategorizer = train(accountHistory)
 let payeeCategorizer = train(payeeHistory)
 
-let rows = try { (filename: String) throws -> [[String]] in
-    guard let data = NSData(contentsOfFile: filename) else {
+
+// Read input, from either stdin (pipe) or file argument.
+let inputCSV: NSData
+
+if !NSFileHandle.standardInput().isatty {
+    inputCSV = NSFileHandle.standardInput().readDataToEndOfFile()
+} else {
+    // Expect the transaction file as unparsed argument (not matched by flag);
+    // only one transaction file is expected.
+    guard cli.unparsedArguments.count == 1 else {
+        print("Specify exactly one transaction file argument");
+        exit(EX_USAGE)
+    }
+    guard let data = NSData(contentsOfFile: cli.unparsedArguments[0]) else {
         print("Could not read transactions file")
         exit(1)
     }
-    var rows = try CSV.parse(data)
+    inputCSV = data
+}
+
+let rows = try { () throws -> [[String]] in
+    var rows = try CSV.parse(inputCSV)
     rows = Array(rows[settings.csvSkipRows..<rows.endIndex])
     if settings.csvReverseRows {
         rows = rows.reversed()
     }
     return rows
-}(settings.transactionsFile)
+}()
 
 let csvDateFormatter = NSDateFormatter()
 csvDateFormatter.dateFormat = settings.csvDateFormat
@@ -86,8 +102,7 @@ for row in rows {
 
     let tokens = row.joined(separator: " ").uppercased().components(separatedBy: csvTokenSeparators).filter { $0 != "" }
     let account = accountCategorizer(tokens).first?.0 ?? settings.defaultAccount
-
-    let payee = payeeCategorizer(tokens).first?.0 ?? row[settings.csvPayeeColumn]
+    let payee = payeeCategorizer(tokens).filter({ $0.1 >= 0.2 }).first?.0 ?? row[settings.csvPayeeColumn]
 
     guard var amount = csvNumberFormatter.number(from: row[settings.csvAmountColumn]).flatMap({ NSDecimalNumber(decimal: $0.decimalValue) }) else {
         print("Could not parse amount \(row[settings.csvAmountColumn])")

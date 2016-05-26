@@ -24,12 +24,11 @@ struct Settings {
     var ledgerDateFormat = "yyyy-MM-dd"
     var ledgerTokenSeparators = ",; \t\"':"
     var ledgerLocale: String?
-
-    var transactionsFile: String!
 }
 
+let cli = CommandLine()
+
 func parseSettings() -> Settings {
-    let cli = CommandLine()
     let configFile = StringOption(shortFlag: "c", helpMessage: "Config file [default=.ledger-tools]")
     let sectionName = StringOption(shortFlag: "s", helpMessage: "Config file section name")
     let trainFile = StringOption(shortFlag: "t", longFlag: "train-file",
@@ -77,17 +76,9 @@ func parseSettings() -> Settings {
         exit(EX_USAGE)
     }
 
-    // Expect the transaction file as unparsed argument (not matched by flag);
-    // only one transaction file is expected.
-    guard cli.unparsedArguments.count == 1 else {
-        print("Specify exactly one transaction file argument");
-        exit(EX_USAGE)
-    }
-
     // Start with default settings; to be overriden with config file and CLI
     // arguments.
     var settings = Settings()
-    settings.transactionsFile = cli.unparsedArguments[0]
 
     // Use INI configuration file settings, if set.
     if let sectionName = sectionName.value {
