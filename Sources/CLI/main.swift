@@ -1,8 +1,7 @@
-import func LedgerParser.parse
+import func LedgerParser.parseLedger
 import enum LedgerParser.Token
 import struct LedgerParser.Transaction
 import Foundation
-import func FootlessParser.parse
 import func Categorizer.freq
 import func Categorizer.train
 import typealias Categorizer.History
@@ -10,7 +9,7 @@ import func CSV.parseCSV
 
 let settings = parseSettings()
 
-let tokens = try parse(filename: (settings.trainFile as NSString).expandingTildeInPath)
+let tokens = try parseLedger(filename: (settings.trainFile as NSString).expandingTildeInPath)
 let transactions = tokens.flatMap { (token: Token) -> Transaction? in
     switch token {
     case .Transaction(let t): return t
