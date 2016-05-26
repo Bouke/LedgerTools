@@ -5,7 +5,7 @@ import Foundation
 import func Categorizer.freq
 import func Categorizer.train
 import typealias Categorizer.History
-import func CSV.parseCSV
+import func CSV.parse
 
 let settings = parseSettings()
 
@@ -39,7 +39,11 @@ let history = { (transactions: [Transaction]) -> History in
 let categorizer = train(history)
 
 let rows = try { (filename: String) throws -> [[String]] in
-    var rows = try parseCSV(filename: filename)
+    guard let data = NSData(contentsOfFile: filename) else {
+        print("Could not read transactions file")
+        exit(1)
+    }
+    var rows = try CSV.parse(data)
     rows = Array(rows[settings.csvSkipRows..<rows.endIndex])
     if settings.csvReverseRows {
         rows = rows.reversed()
