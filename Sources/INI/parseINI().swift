@@ -1,13 +1,21 @@
-//
-//  CSV.swift
-//  LedgerTools
-//
-//  Created by Bouke Haarsma on 19-05-16.
-//
-//
-
 import Foundation
-import FootlessParser
+
+enum ScanError: ErrorProtocol {
+    case NoMatch
+}
+enum ParseError: ErrorProtocol {
+    case InvalidSyntax(NSScanner.Position)
+    case UnsupportedToken(NSScanner.Position)
+}
+
+extension ParseError: CustomStringConvertible {
+    var description: String {
+        switch self {
+        case let .InvalidSyntax(_, row, pos): return "Invalid syntax at row \(row), position \(pos)"
+        case let .UnsupportedToken(_, row, pos): return "Unsupported token at row \(row), position \(pos)"
+        }
+    }
+}
 
 public struct Config {
     public let sections: [Section]
@@ -21,11 +29,9 @@ public struct Section {
     public let name: String
     public let settings: [String: String]
 
-    init(name: String, settings: [(String, String)]) {
+    init(name: String, settings: [String: String]) {
         self.name = name
-        var s = [String: String]()
-        for (key, value) in settings { s[key] = value }
-        self.settings = s
+        self.settings = settings
     }
 
     public subscript(key: String) -> String? {
@@ -37,12 +43,34 @@ public struct Section {
     }
 }
 
-internal let parser: Parser<Character, Config> = {
-    let setting = tuple <^> oneOrMore(noneOf(" =\n[]")) <* optional(whitespace) <* char("=") <* optional(whitespace) <*> oneOrMore(not("\n")) <* oneOrMore(newline)
-    let header = char("[") *> oneOrMore(not("]")) <* char("]") <* oneOrMore(newline)
-    let section = curry(Section.init) <^> header <*> zeroOrMore(setting)
-    return Config.init <^> (zeroOrMore(newline) *> zeroOrMore(section))
-}()
+func scanSection(_ scanner: NSScanner) throws -> Section {
+    scanner.charactersToBeSkipped = NSCharacterSet.whitespacesAndNewlines()
+    guard scanner.scanString("[", into: nil) else { throw ScanError.NoMatch }
+    guard let name = scanner.scanUpTo("]") else { throw ParseError.InvalidSyntax(scanner.position) }
+    scanner.scanString("]", into: nil)
+    var settings = [String: String]()
+    while true {
+        if var key = scanner.scanCharacters(from: NSCharacterSet.alphanumerics()) {
+            key += scanner.scanUpTo("=") ?? ""
+            guard scanner.scanString("=", into: nil) else { throw ParseError.InvalidSyntax(scanner.position) }
+            scanner.scanString(" ", into: nil)
+            guard let value = scanner.scanUpToCharacters(from: NSCharacterSet.newlines()) else { throw ParseError.InvalidSyntax(scanner.position) }
+            settings[key] = value
+            continue
+        }
+        do {
+            try scanNote(scanner)
+            continue
+        } catch ScanError.NoMatch { }
+        break
+    }
+    return Section(name: name, settings: settings)
+}
+
+func scanNote(_ scanner: NSScanner) throws {
+    guard scanner.scanString(";", into: nil) else { throw ScanError.NoMatch }
+    scanner.scanUpToCharacters(from: NSCharacterSet.newlines(), into: nil)
+}
 
 public func parseINI(filename: String) throws -> Config {
     let input = try String(contentsOfFile: filename)
@@ -50,10 +78,18 @@ public func parseINI(filename: String) throws -> Config {
 }
 
 public func parseINI(string: String) throws -> Config {
-    do {
-        return try parse(parser, string)
-    } catch let error as ParseError<Character> {
-        print(error: error, in: string)
-        throw error
+    let scanner = NSScanner(string: string)
+    var sections = [Section]()
+    while !scanner.isAtEnd {
+        do {
+            sections.append(try scanSection(scanner))
+            continue
+        } catch ScanError.NoMatch { }
+        do {
+            try scanNote(scanner)
+            continue
+        } catch ScanError.NoMatch { }
+        throw ParseError.UnsupportedToken(scanner.position)
     }
+    return Config(sections: sections)
 }

@@ -86,7 +86,7 @@ func parseSettings() -> Settings {
         do {
             config = try parseINI(filename: ((configFile.value ?? ".ledger-tools") as NSString).standardizingPath)
         } catch {
-            print("Could not read settings file")
+            print("Could not read settings file: \(error)")
             exit(EX_USAGE)
         }
         guard let section = config[sectionName] else {

@@ -8,7 +8,6 @@ The tool provided will read a CSV file and output a Ledger journal. It will matc
 Provide a suite of CLI tools to support some Ledger workflows.
 
 ## Todo
-* Replace INI Parser Combinator with NSScanner.
 * Write input CSV as-is, if possible.
 * Filter tokens that generate too much noise.
 * Documentation

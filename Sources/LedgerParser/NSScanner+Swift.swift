@@ -151,4 +151,16 @@ extension NSScanner {
         }
         return nil
     }
+
+    typealias Position = (line: Range<String.CharacterView.Index>, row: Int, pos: Int)
+    var position: Position {
+        let index = string.index(string.startIndex, offsetBy: scanLocation)
+        var head = string.startIndex..<string.startIndex
+        var row = 0
+        while head.upperBound <= index {
+            head = string.lineRange(for: head.upperBound..<head.upperBound)
+            row += 1
+        }
+        return (head, row, string.distance(from: head.lowerBound, to: index) + 1)
+    }
 }
