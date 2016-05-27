@@ -1,10 +1,3 @@
-extension String {
-    func pad(_ length: Int) -> String {
-        return padding(toLength: length, withPad: " ", startingAt: 0)
-    }
-}
-
-
 // partially from: https://gist.githubusercontent.com/mattt/1ed12090d7c89f36fd28/raw/cd83e2cb5b284da4e79601f28dc42da7b80eb8bb/NSDecimalNumber.swift
 
 import Foundation
