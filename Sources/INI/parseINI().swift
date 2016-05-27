@@ -37,7 +37,7 @@ public struct Section {
     }
 }
 
-public let parser: Parser<Character, Config> = {
+internal let parser: Parser<Character, Config> = {
     let setting = tuple <^> oneOrMore(noneOf(" =\n[]")) <* optional(whitespace) <* char("=") <* optional(whitespace) <*> oneOrMore(not("\n")) <* oneOrMore(newline)
     let header = char("[") *> oneOrMore(not("]")) <* char("]") <* oneOrMore(newline)
     let section = curry(Section.init) <^> header <*> zeroOrMore(setting)
@@ -46,10 +46,14 @@ public let parser: Parser<Character, Config> = {
 
 public func parseINI(filename: String) throws -> Config {
     let input = try String(contentsOfFile: filename)
+    return try parseINI(string: input)
+}
+
+public func parseINI(string: String) throws -> Config {
     do {
-        return try parse(parser, input)
+        return try parse(parser, string)
     } catch let error as ParseError<Character> {
-        print(error: error, in: input)
+        print(error: error, in: string)
         throw error
     }
 }
