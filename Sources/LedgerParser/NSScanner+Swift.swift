@@ -5,12 +5,12 @@
 
 import Foundation
 
-extension NSScanner {
+extension Scanner {
 
     // MARK: Strings
 
     /// Returns a string, scanned as long as characters from a given character set are encountered, or `nil` if none are found.
-    func scanCharacters(from set: NSCharacterSet) -> String? {
+    func scanCharacters(from set: CharacterSet) -> String? {
         var value: NSString? = ""
         if scanCharacters(from: set, into: &value),
             let value = value as? String {
@@ -20,7 +20,7 @@ extension NSScanner {
     }
 
     /// Returns a string, scanned until a character from a given character set are encountered, or the remainder of the scanner's string. Returns `nil` if the scanner is already `atEnd`.
-    func scanUpToCharacters(from set: NSCharacterSet) -> String? {
+    func scanUpToCharacters(from set: CharacterSet) -> String? {
         var value: NSString? = ""
         if scanUpToCharacters(from: set, into: &value),
             let value = value as? String {
@@ -105,9 +105,9 @@ extension NSScanner {
         return nil
     }
 
-    /// Returns an NSDecimal if scanned, or `nil` if not found.
-    func scanDecimal() -> NSDecimal? {
-        var value = NSDecimal()
+    /// Returns an Decimal if scanned, or `nil` if not found.
+    func scanDecimal() -> Decimal? {
+        var value = Decimal()
         if scanDecimal(&value) {
             return value
         }

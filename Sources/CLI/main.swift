@@ -17,7 +17,7 @@ let transactions = tokens.flatMap { (token: Token) -> Transaction? in
     }
 }
 
-let ledgerTokenSeparators = NSCharacterSet(charactersIn: settings.ledgerTokenSeparators)
+let ledgerTokenSeparators = CharacterSet(charactersIn: settings.ledgerTokenSeparators)
 
 let originatingAccount = { (t: [Transaction]) -> String in
     let f = freq(t.map { $0.postings.map { $0.account } }.flatten())
@@ -45,8 +45,8 @@ let payeeCategorizer = train(payeeHistory)
 // Read input, from either stdin (pipe) or file argument.
 let inputCSV: NSData
 
-if !NSFileHandle.standardInput().isatty {
-    inputCSV = NSFileHandle.standardInput().readDataToEndOfFile()
+if !FileHandle.standardInput().isatty {
+    inputCSV = FileHandle.standardInput().readDataToEndOfFile()
 } else {
     // Expect the transaction file as unparsed argument (not matched by flag);
     // only one transaction file is expected.
@@ -70,28 +70,28 @@ let rows = try { () throws -> [[String]] in
     return rows
 }()
 
-let csvDateFormatter = NSDateFormatter()
+let csvDateFormatter = DateFormatter()
 csvDateFormatter.dateFormat = settings.csvDateFormat
 
-let ledgerDateFormatter = NSDateFormatter()
+let ledgerDateFormatter = DateFormatter()
 ledgerDateFormatter.dateFormat = settings.ledgerDateFormat
 
 let minimalColumnCount = [settings.csvDateColumn, settings.csvPayeeColumn,
     settings.csvAmountColumn, settings.csvDescriptionColumn].max()!
 
-let csvTokenSeparators = NSCharacterSet(charactersIn: settings.csvTokenSeparators)
+let csvTokenSeparators = CharacterSet(charactersIn: settings.csvTokenSeparators)
 
-let csvNumberFormatter = NSNumberFormatter()
-csvNumberFormatter.numberStyle = .decimalStyle
+let csvNumberFormatter = NumberFormatter()
+csvNumberFormatter.numberStyle = .decimal
 csvNumberFormatter.isLenient = true
 if let locale = settings.csvLocale {
-    csvNumberFormatter.locale = NSLocale(localeIdentifier: locale)
+    csvNumberFormatter.locale = Locale(localeIdentifier: locale)
 }
 
-let ledgerNumberFormatter = NSNumberFormatter()
-ledgerNumberFormatter.numberStyle = .currencyStyle
+let ledgerNumberFormatter = NumberFormatter()
+ledgerNumberFormatter.numberStyle = .currency
 if let locale = settings.ledgerLocale {
-    ledgerNumberFormatter.locale = NSLocale(localeIdentifier: locale)
+    ledgerNumberFormatter.locale = Locale(localeIdentifier: locale)
 }
 
 for row in rows {

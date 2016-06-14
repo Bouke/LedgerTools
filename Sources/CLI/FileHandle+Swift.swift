@@ -8,7 +8,7 @@
 
 import Foundation
 
-extension NSFileHandle {
+extension FileHandle {
     var isatty: Bool {
         return Darwin.isatty(fileDescriptor) != 0
     }

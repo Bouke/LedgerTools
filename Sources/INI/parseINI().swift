@@ -4,8 +4,8 @@ enum ScanError: ErrorProtocol {
     case NoMatch
 }
 enum ParseError: ErrorProtocol {
-    case InvalidSyntax(NSScanner.Position)
-    case UnsupportedToken(NSScanner.Position)
+    case InvalidSyntax(Scanner.Position)
+    case UnsupportedToken(Scanner.Position)
 }
 
 extension ParseError: CustomStringConvertible {
@@ -43,18 +43,18 @@ public struct Section {
     }
 }
 
-func scanSection(_ scanner: NSScanner) throws -> Section {
-    scanner.charactersToBeSkipped = NSCharacterSet.whitespacesAndNewlines()
+func scanSection(_ scanner: Scanner) throws -> Section {
+    scanner.charactersToBeSkipped = .whitespacesAndNewlines
     guard scanner.scanString("[", into: nil) else { throw ScanError.NoMatch }
     guard let name = scanner.scanUpTo("]") else { throw ParseError.InvalidSyntax(scanner.position) }
     scanner.scanString("]", into: nil)
     var settings = [String: String]()
     while true {
-        if var key = scanner.scanCharacters(from: NSCharacterSet.alphanumerics()) {
+        if var key = scanner.scanCharacters(from: .alphanumerics) {
             key += scanner.scanUpTo("=") ?? ""
             guard scanner.scanString("=", into: nil) else { throw ParseError.InvalidSyntax(scanner.position) }
             scanner.scanString(" ", into: nil)
-            guard let value = scanner.scanUpToCharacters(from: NSCharacterSet.newlines()) else { throw ParseError.InvalidSyntax(scanner.position) }
+            guard let value = scanner.scanUpToCharacters(from: .newlines) else { throw ParseError.InvalidSyntax(scanner.position) }
             settings[key] = value
             continue
         }
@@ -67,9 +67,9 @@ func scanSection(_ scanner: NSScanner) throws -> Section {
     return Section(name: name, settings: settings)
 }
 
-func scanNote(_ scanner: NSScanner) throws {
+func scanNote(_ scanner: Scanner) throws {
     guard scanner.scanString(";", into: nil) else { throw ScanError.NoMatch }
-    scanner.scanUpToCharacters(from: NSCharacterSet.newlines(), into: nil)
+    scanner.scanUpToCharacters(from: .newlines, into: nil)
 }
 
 public func parseINI(filename: String) throws -> Config {
@@ -78,7 +78,7 @@ public func parseINI(filename: String) throws -> Config {
 }
 
 public func parseINI(string: String) throws -> Config {
-    let scanner = NSScanner(string: string)
+    let scanner = Scanner(string: string)
     var sections = [Section]()
     while !scanner.isAtEnd {
         do {
