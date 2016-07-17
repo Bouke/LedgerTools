@@ -9,7 +9,13 @@ import func CSV.parse
 
 let settings = parseSettings()
 
-let tokens = try parseLedger(filename: (settings.trainFile as NSString).expandingTildeInPath)
+let tokens: [Token]
+do {
+    tokens = try parseLedger(filename: (settings.trainFile as NSString).expandingTildeInPath)
+} catch {
+    print("Could not parse ledger file: \(error)")
+    exit(1)
+}
 let transactions = tokens.flatMap { (token: Token) -> Transaction? in
     switch token {
     case .Transaction(let t): return t
