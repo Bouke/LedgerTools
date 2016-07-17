@@ -45,8 +45,8 @@ let payeeCategorizer = train(payeeHistory)
 // Read input, from either stdin (pipe) or file argument.
 let inputCSV: NSData
 
-if !FileHandle.standardInput().isatty {
-    inputCSV = FileHandle.standardInput().readDataToEndOfFile()
+if !FileHandle.withStandardInput.isatty {
+    inputCSV = FileHandle.withStandardInput.readDataToEndOfFile()
 } else {
     // Expect the transaction file as unparsed argument (not matched by flag);
     // only one transaction file is expected.
@@ -108,7 +108,7 @@ for row in rows {
         print("Could not parse amount \(row[settings.csvAmountColumn])")
         exit(1)
     }
-    if let csvAmountDebit = settings.csvAmountDebit where row[csvAmountDebit.column] == csvAmountDebit.text {
+    if let csvAmountDebit = settings.csvAmountDebit, row[csvAmountDebit.column] == csvAmountDebit.text {
         amount *= -1
     }
 

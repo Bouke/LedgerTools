@@ -101,7 +101,7 @@ func parseSettings() -> Settings {
         if let csvDateColumn = section["csv-date-column"].flatMap({ Int($0) }) { settings.csvDateColumn = csvDateColumn }
         if let csvPayeeColumn = section["csv-payee-column"].flatMap({ Int($0) }) { settings.csvPayeeColumn = csvPayeeColumn }
         if let csvAmountColumn = section["csv-amount-column"].flatMap({ Int($0) }) { settings.csvAmountColumn = csvAmountColumn }
-        if let value = section["csv-amount-debit"].flatMap({ $0.components(separatedBy: "=") }) where value.count == 2 {
+        if let value = section["csv-amount-debit"].flatMap({ $0.components(separatedBy: "=") }), value.count == 2 {
             guard let column = Int(value[0]) else {
                 print("Could not parse csv-amount-debit setting")
                 exit(EX_USAGE)
@@ -129,7 +129,7 @@ func parseSettings() -> Settings {
     if let csvDateColumn = csvDateColumn.value { settings.csvDateColumn = csvDateColumn }
     if let csvPayeeColumn = csvPayeeColumn.value { settings.csvPayeeColumn = csvPayeeColumn }
     if let csvAmountColumn = csvAmountColumn.value { settings.csvAmountColumn = csvAmountColumn }
-    if let value = csvAmountDebit.value.flatMap({ $0.components(separatedBy: "=") }) where value.count == 2 {
+    if let value = csvAmountDebit.value.flatMap({ $0.components(separatedBy: "=") }), value.count == 2 {
         guard let column = Int(value[0]) else {
             print("Could not parse csv-amount-debit setting")
             exit(EX_USAGE)
