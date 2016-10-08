@@ -1,4 +1,4 @@
-public func memo<A: Hashable, C> (_ f: (A) -> C) -> (A) -> C {
+public func memo<A: Hashable, C> (_ f: @escaping (A) -> C) -> (A) -> C {
     var cache = [A: C]()
     return { (a) in
         if let value = cache[a] { return value }
@@ -7,7 +7,7 @@ public func memo<A: Hashable, C> (_ f: (A) -> C) -> (A) -> C {
     }
 }
 
-public func memo<A: Hashable, B: Hashable, C> (_ f: (A, B) -> C) -> (A, B) -> C {
+public func memo<A: Hashable, B: Hashable, C> (_ f: @escaping (A, B) -> C) -> (A, B) -> C {
     var cache = [A: [B: C]]()
     return { (a, b) in
         if let value = cache[a]?[b] { return value }

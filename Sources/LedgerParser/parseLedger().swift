@@ -12,10 +12,10 @@ let flagSet = CharacterSet(charactersIn: "*")
 let noteSet = CharacterSet(charactersIn: ";")
 let payee = CharacterSet.alphanumerics
 
-enum ScanError: ErrorProtocol {
+enum ScanError: Error {
     case NoMatch
 }
-enum ParseError: ErrorProtocol {
+enum ParseError: Error {
     case InvalidSyntax
     case UnsupportedToken
 }
@@ -118,7 +118,7 @@ public func parseLedger(filename: String) throws -> [Token] {
         case .Include(let pattern):
             var pattern = pattern
             if pattern.characters.first != "/" {
-                pattern = try! NSURL(fileURLWithPath: filename).deletingLastPathComponent!.appendingPathComponent(pattern).path!
+                pattern = NSURL(fileURLWithPath: filename).deletingLastPathComponent!.appendingPathComponent(pattern).path
             }
             for filename in Glob(pattern: pattern) {
                 for token2 in try parseLedger(filename: filename) {

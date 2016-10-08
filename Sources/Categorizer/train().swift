@@ -21,17 +21,17 @@ public func train(_ history: History) -> Categorizer {
     }()
     
     let probabilityToken = memo { (token: String) -> Double in
-        let p = Double(tokens[token] ?? 0) / Double(tokens.values.reduce(0, combine: +))
+        let p = Double(tokens[token] ?? 0) / Double(tokens.values.reduce(0, +))
         return p.isNaN ? 0 : p
     }
 
     let probabilityAccount = memo { (account: String) -> Double in
-        let p = Double(categories[account] ?? 0) / Double(categories.values.reduce(0, combine: +))
+        let p = Double(categories[account] ?? 0) / Double(categories.values.reduce(0, +))
         return p.isNaN ? 0 : p
     }
 
     let probabilityTokenInAccount = memo { (token: String, account: String) -> Double in
-        let p = Double(tokenInCategory[account]?[token] ?? 0) / Double(tokenInCategory[account]?.values.reduce(0, combine: +) ?? 0)
+        let p = Double(tokenInCategory[account]?[token] ?? 0) / Double(tokenInCategory[account]?.values.reduce(0, +) ?? 0)
         return p.isNaN ? 0 : p
     }
 
@@ -41,7 +41,7 @@ public func train(_ history: History) -> Categorizer {
     }
 
     func probabilityAccountForTokens(account: String, tokens: [String]) -> Double {
-        return tokens.map { probabilityAccountForToken(account: account, token: $0) }.reduce(0, combine: +) / Double(tokens.count)
+        return tokens.map { probabilityAccountForToken(account: account, token: $0) }.reduce(0, +) / Double(tokens.count)
     }
 
     return { (tokens) in

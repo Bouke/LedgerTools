@@ -26,7 +26,7 @@ let transactions = tokens.flatMap { (token: Token) -> Transaction? in
 let ledgerTokenSeparators = CharacterSet(charactersIn: settings.ledgerTokenSeparators)
 
 let originatingAccount = { (t: [Transaction]) -> String in
-    let f = freq(t.map { $0.postings.map { $0.account } }.flatten())
+    let f = freq(t.map { $0.postings.map { $0.account } }.joined())
     return f.sorted { $0.value >= $1.value }.first?.key ?? "Assets:Banking"
 }(transactions)
 
@@ -49,10 +49,10 @@ let payeeCategorizer = train(payeeHistory)
 
 
 // Read input, from either stdin (pipe) or file argument.
-let inputCSV: NSData
+let inputCSV: Data
 
-if !FileHandle.withStandardInput.isatty {
-    inputCSV = FileHandle.withStandardInput.readDataToEndOfFile()
+if !FileHandle.standardInput.isatty {
+    inputCSV = FileHandle.standardInput.readDataToEndOfFile()
 } else {
     // Expect the transaction file as unparsed argument (not matched by flag);
     // only one transaction file is expected.
@@ -60,7 +60,7 @@ if !FileHandle.withStandardInput.isatty {
         print("Specify exactly one transaction file argument");
         exit(EX_USAGE)
     }
-    guard let data = NSData(contentsOfFile: cli.unparsedArguments[0]) else {
+    guard let data = try? Data(contentsOf: URL(fileURLWithPath: cli.unparsedArguments[0])) else {
         print("Could not read transactions file")
         exit(1)
     }
@@ -91,13 +91,13 @@ let csvNumberFormatter = NumberFormatter()
 csvNumberFormatter.numberStyle = .decimal
 csvNumberFormatter.isLenient = true
 if let locale = settings.csvLocale {
-    csvNumberFormatter.locale = Locale(localeIdentifier: locale)
+    csvNumberFormatter.locale = Locale(identifier: locale)
 }
 
 let ledgerNumberFormatter = NumberFormatter()
 ledgerNumberFormatter.numberStyle = .currency
 if let locale = settings.ledgerLocale {
-    ledgerNumberFormatter.locale = Locale(localeIdentifier: locale)
+    ledgerNumberFormatter.locale = Locale(identifier: locale)
 }
 
 for row in rows {

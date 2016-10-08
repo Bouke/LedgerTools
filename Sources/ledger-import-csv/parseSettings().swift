@@ -1,8 +1,8 @@
 import Foundation
-import class CommandLine.CommandLine
-import class CommandLine.StringOption
-import class CommandLine.IntOption
-import class CommandLine.BoolOption
+import class CommandLineKit.CommandLineKit
+import class CommandLineKit.StringOption
+import class CommandLineKit.IntOption
+import class CommandLineKit.BoolOption
 import func INI.parseINI
 import struct INI.Config
 
@@ -26,7 +26,7 @@ struct Settings {
     var ledgerLocale: String?
 }
 
-let cli = CommandLine()
+let cli = CommandLineKit()
 
 func parseSettings() -> Settings {
     let configFile = StringOption(shortFlag: "c", helpMessage: "Config file [default=.ledger-tools]")
