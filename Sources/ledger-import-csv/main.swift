@@ -110,12 +110,12 @@ for row in rows {
     let account = accountCategorizer(tokens).first?.0 ?? settings.defaultAccount
     let payee = payeeCategorizer(tokens).filter({ $0.1 >= 0.2 }).first?.0 ?? row[settings.csvPayeeColumn]
 
-    guard var amount = csvNumberFormatter.number(from: row[settings.csvAmountColumn]).flatMap({ NSDecimalNumber(decimal: $0.decimalValue) }) else {
+    guard var amount = csvNumberFormatter.number(from: row[settings.csvAmountColumn]).flatMap({ $0.decimalValue }) else {
         print("Could not parse amount \(row[settings.csvAmountColumn])")
         exit(1)
     }
     if let csvAmountDebit = settings.csvAmountDebit, row[csvAmountDebit.column] == csvAmountDebit.text {
-        amount *= -1
+        amount = amount * -1
     }
 
     guard let date = csvDateFormatter.date(from: row[settings.csvDateColumn]) else {

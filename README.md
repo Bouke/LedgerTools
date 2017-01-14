@@ -7,7 +7,11 @@ The tool provided will read a CSV file and output a Ledger journal. It will matc
 ## Goal
 Provide a suite of CLI tools to support some Ledger workflows.
 
+## Building
+
+     make build
+
 ## Todo
-* Write input CSV as-is, if possible.
-* Filter tokens that generate too much noise.
-* Documentation
+* [ ] Write input CSV as-is, if possible.
+* [ ] Filter tokens that generate too much noise.
+* [ ] Documentation
