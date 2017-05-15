@@ -30,25 +30,17 @@ let originatingAccount = { (t: [Transaction]) -> String in
     return f.sorted { $0.value >= $1.value }.first?.key ?? "Assets:Banking"
 }(transactions)
 
-let (accountHistory, payeeHistory) = { (transactions: [Transaction]) -> (History, History) in
-    var a = History()
-    var p = History()
-    for transaction in transactions {
-        let tokens = transaction.notes.flatMap { $0.uppercased().components(separatedBy: ledgerTokenSeparators) }.filter { $0 != "" }
-        p.append(transaction.payee, tokens)
-        for posting in transaction.postings {
-            guard posting.account != originatingAccount else { continue }
-            a.append(posting.account, tokens)
-        }
+
+let descriptionRegex = try! NSRegularExpression(pattern: "Omschrijving: (.+?) IBAN", options: [])
+func extractTokens(row: [String]) -> [String] {
+    var tokens = row[1].components(separatedBy: " ")
+    if let match = descriptionRegex.matches(in: row[8]).first {
+        tokens += match.groups.first!.components(separatedBy: " ")
     }
-    return (a, p)
-}(transactions)
+    return tokens
+}
 
-let accountCategorizer = train(accountHistory)
-let payeeCategorizer = train(payeeHistory)
-
-
-// Read input, from either stdin (pipe) or file argument.
+//MARK: Read input, from either stdin (pipe) or file argument.
 let inputCSV: Data
 
 if !FileHandle.standardInput.isatty {
@@ -66,15 +58,6 @@ if !FileHandle.standardInput.isatty {
     }
     inputCSV = data
 }
-
-let rows = try { () throws -> [[String]] in
-    var rows = try CSV.parse(inputCSV)
-    rows = Array(rows[settings.csvSkipRows..<rows.endIndex])
-    if settings.csvReverseRows {
-        rows = rows.reversed()
-    }
-    return rows
-}()
 
 let csvDateFormatter = DateFormatter()
 csvDateFormatter.dateFormat = settings.csvDateFormat
@@ -100,13 +83,51 @@ if let locale = settings.ledgerLocale {
     ledgerNumberFormatter.locale = Locale(identifier: locale)
 }
 
+//MARK: Read history
+
+let (accountHistory, payeeHistory) = { (transactions: [Transaction]) -> (History, History) in
+    var a = History()
+    var p = History()
+    for transaction in transactions {
+        guard let note = transaction.notes.first(where: { $0.hasPrefix(" CSV: ") }) else { continue }
+        let csv = note.substring(from: note.index(note.startIndex, offsetBy: 6))
+        guard let row = (try? CSV.parse(csv.data(using: .utf8)!))?.first else { continue }
+        guard row.count >= minimalColumnCount else {
+            print(transaction)
+            print("Found a transaction with \(row.count) columns, at least \(minimalColumnCount) expected")
+            continue
+        }
+        let tokens = extractTokens(row: row)
+        p.append(transaction.payee, tokens)
+        for posting in transaction.postings {
+            guard posting.account != originatingAccount else { continue }
+            a.append(posting.account, tokens)
+        }
+    }
+    return (a, p)
+}(transactions)
+
+let accountCategorizer = train(accountHistory)
+let payeeCategorizer = train(payeeHistory)
+
+
+//MARK: Read input CSV
+
+let rows = try { () throws -> [[String]] in
+    var rows = try CSV.parse(inputCSV)
+    rows = Array(rows[settings.csvSkipRows..<rows.endIndex])
+    if settings.csvReverseRows {
+        rows = rows.reversed()
+    }
+    return rows
+}()
+
 for row in rows {
     guard row.count >= minimalColumnCount else {
         print("Found a row with \(row.count) columns, at least \(minimalColumnCount) expected")
         exit(1)
     }
-
-    let tokens = row.joined(separator: " ").uppercased().components(separatedBy: csvTokenSeparators).filter { $0 != "" }
+    let tokens = extractTokens(row: row)
     let account = accountCategorizer(tokens).first?.0 ?? settings.defaultAccount
     let payee = payeeCategorizer(tokens).filter({ $0.1 >= 0.2 }).first?.0 ?? row[settings.csvPayeeColumn]
 
