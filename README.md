@@ -9,7 +9,12 @@ Provide a suite of CLI tools to support some Ledger workflows.
 
 ## Building
 
-     make build
+    brew install libcsv
+    make build
+
+## Work in Xcode
+
+    You need to set the "Header Search Path" for the "LedgerTools" project, under Build Settings. Add `/usr/local/opt/libcsv/include` there.
 
 ## Todo
 * [ ] Write input CSV as-is, if possible.
