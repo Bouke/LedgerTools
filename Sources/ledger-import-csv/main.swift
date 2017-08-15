@@ -7,13 +7,18 @@ import func Categorizer.train
 import typealias Categorizer.History
 import func CSV.parse
 
+public struct StderrOutputStream: TextOutputStream {
+    public mutating func write(_ string: String) { fputs(string, stderr) }
+}
+public var errStream = StderrOutputStream()
+
 let settings = parseSettings()
 
 let tokens: [Token]
 do {
     tokens = try parseLedger(filename: (settings.trainFile as NSString).expandingTildeInPath)
 } catch {
-    print("Could not parse ledger file: \(error)")
+    print("Could not parse ledger file: \(error)", to: &errStream)
     exit(1)
 }
 let transactions = tokens.flatMap { (token: Token) -> Transaction? in
@@ -49,11 +54,11 @@ if !FileHandle.standardInput.isatty {
     // Expect the transaction file as unparsed argument (not matched by flag);
     // only one transaction file is expected.
     guard cli.unparsedArguments.count == 1 else {
-        print("Specify exactly one transaction file argument");
+        print("Specify exactly one transaction file argument", to: &errStream)
         exit(EX_USAGE)
     }
     guard let data = try? Data(contentsOf: URL(fileURLWithPath: cli.unparsedArguments[0])) else {
-        print("Could not read transactions file")
+        print("Could not read transactions file", to: &errStream)
         exit(1)
     }
     inputCSV = data
@@ -93,8 +98,8 @@ let (accountHistory, payeeHistory) = { (transactions: [Transaction]) -> (History
         let csv = note.substring(from: note.index(note.startIndex, offsetBy: 6))
         guard let row = (try? CSV.parse(csv.data(using: .utf8)!))?.first else { continue }
         guard row.count >= minimalColumnCount else {
-            print(transaction)
-            print("Found a transaction with \(row.count) columns, at least \(minimalColumnCount) expected")
+            print(transaction, to: &errStream)
+            print("Found a transaction with \(row.count) columns, at least \(minimalColumnCount) expected", to: &errStream)
             continue
         }
         let tokens = extractTokens(row: row)
@@ -124,7 +129,7 @@ let rows = try { () throws -> [[String]] in
 
 for row in rows {
     guard row.count >= minimalColumnCount else {
-        print("Found a row with \(row.count) columns, at least \(minimalColumnCount) expected")
+        print("Found a row with \(row.count) columns, at least \(minimalColumnCount) expected", to: &errStream)
         exit(1)
     }
     let tokens = extractTokens(row: row)
@@ -132,7 +137,7 @@ for row in rows {
     let payee = payeeCategorizer(tokens).filter({ $0.1 >= 0.2 }).first?.0 ?? row[settings.csvPayeeColumn]
 
     guard var amount = csvNumberFormatter.number(from: row[settings.csvAmountColumn]).flatMap({ $0.decimalValue }) else {
-        print("Could not parse amount \(row[settings.csvAmountColumn])")
+        print("Could not parse amount \(row[settings.csvAmountColumn])", to: &errStream)
         exit(1)
     }
     if let csvAmountDebit = settings.csvAmountDebit, row[csvAmountDebit.column] == csvAmountDebit.text {
@@ -140,7 +145,7 @@ for row in rows {
     }
 
     guard let date = csvDateFormatter.date(from: row[settings.csvDateColumn]) else {
-        print("Could not parse date \(row[settings.csvDateColumn])")
+        print("Could not parse date \(row[settings.csvDateColumn])", to: &errStream)
         exit(1)
     }
 
