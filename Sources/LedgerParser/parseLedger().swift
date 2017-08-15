@@ -16,8 +16,13 @@ enum ScanError: Error {
     case NoMatch
 }
 enum ParseError: Error {
-    case InvalidSyntax
-    case UnsupportedToken
+    case InvalidSyntax(Scanner.Position)
+    case UnsupportedToken(Scanner.Position)
+}
+
+enum LedgerError: Error {
+    case ParseError(filename: String, error: ParseError)
+    case ReferencedFileError(self: String, other: ParseError)
 }
 
 public struct Transaction {
@@ -37,8 +42,12 @@ public struct Posting {
 func scanTransaction(_ scanner: Scanner) throws -> Token {
     scanner.charactersToBeSkipped = .whitespacesAndNewlines
     guard let date = scanner.scanCharacters(from: dateSet) else { throw ScanError.NoMatch }
-    guard let flag = scanner.scanCharacters(from: flagSet) else { throw ParseError.InvalidSyntax }
-    guard let payee = scanner.scanUpToCharacters(from: .newlines) else { throw ParseError.InvalidSyntax }
+    guard let flag = scanner.scanCharacters(from: flagSet) else {
+        throw ParseError.InvalidSyntax(scanner.position)
+    }
+    guard let payee = scanner.scanUpToCharacters(from: .newlines) else {
+        throw ParseError.InvalidSyntax(scanner.position)
+    }
 
     // scan position is at the newline of the header
     scanner.charactersToBeSkipped = .newlines
@@ -82,15 +91,23 @@ func scanTransaction(_ scanner: Scanner) throws -> Token {
 
 func scanNote(_ scanner: Scanner) throws -> Token {
     scanner.charactersToBeSkipped = .whitespacesAndNewlines
-    guard scanner.scanCharacters(from: noteSet, into: nil) else { throw ScanError.NoMatch }
-    guard let note = scanner.scanUpToCharacters(from: .newlines) else { throw ParseError.InvalidSyntax }
+    guard scanner.scanCharacters(from: noteSet, into: nil) else {
+        throw ScanError.NoMatch
+    }
+    guard let note = scanner.scanUpToCharacters(from: .newlines) else {
+        throw ParseError.InvalidSyntax(scanner.position)
+    }
     return .Note(note)
 }
 
 func scanInclude(_ scanner: Scanner) throws -> Token {
     scanner.charactersToBeSkipped = .whitespacesAndNewlines
-    guard scanner.scanString("include", into: nil) else { throw ScanError.NoMatch }
-    guard let filename = scanner.scanUpToCharacters(from: .newlines) else { throw ParseError.InvalidSyntax }
+    guard scanner.scanString("include", into: nil) else {
+        throw ScanError.NoMatch
+    }
+    guard let filename = scanner.scanUpToCharacters(from: .newlines) else {
+        throw ParseError.InvalidSyntax(scanner.position)
+    }
     return .Include(filename)
 }
 
@@ -106,27 +123,35 @@ func scanToken(_ scanner: Scanner) throws -> Token? {
     do { return try scanInclude(scanner) }
     catch ScanError.NoMatch { }
 
-    throw ParseError.UnsupportedToken
+    throw ParseError.UnsupportedToken(scanner.position)
 }
 
 public func parseLedger(filename: String) throws -> [Token] {
     let input = try String(contentsOfFile: filename)
     var result = [Token]()
     let scanner = Scanner(string: input)
-    while let token = try scanToken(scanner) {
-        switch token {
-        case .Include(let pattern):
-            var pattern = pattern
-            if pattern.characters.first != "/" {
-                pattern = NSURL(fileURLWithPath: filename).deletingLastPathComponent!.appendingPathComponent(pattern).path
-            }
-            for filename in Glob(pattern: pattern) {
-                for token2 in try parseLedger(filename: filename) {
-                    result.append(token2)
+    do {
+        while let token = try scanToken(scanner) {
+            switch token {
+            case .Include(let pattern):
+                var pattern = pattern
+                if pattern.characters.first != "/" {
+                    pattern = NSURL(fileURLWithPath: filename).deletingLastPathComponent!.appendingPathComponent(pattern).path
                 }
+                for other in Glob(pattern: pattern) {
+                    do {
+                        for token2 in try parseLedger(filename: other) {
+                            result.append(token2)
+                        }
+                    } catch let error as ParseError {
+                        throw LedgerError.ReferencedFileError(self: filename, other: error)
+                    }
+                }
+            default: result.append(token)
             }
-        default: result.append(token)
         }
+        return result
+    } catch let error as ParseError {
+        throw LedgerError.ParseError(filename: filename, error: error)
     }
-    return result
 }
